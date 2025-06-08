@@ -8,7 +8,7 @@ from src.retrieval import retriever, retriever_2
 from langchain_core.runnables import RunnablePassthrough
 from src.prompt import prompt
 from src.llm import llm
-from langchain.schema import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from flask_cors import CORS
 
 
