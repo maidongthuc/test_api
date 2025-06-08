@@ -1,5 +1,5 @@
 from flask import Flask
-
+from langchain_google_genai import ChatGoogleGenerativeAI
 app = Flask(__name__)
 
 @app.route('/')
