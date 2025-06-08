@@ -1,12 +1,14 @@
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-# ...existing code...
+
+
 from flask import Flask, request, jsonify
+from src.retrieval import retriever, retriever_2
+from langchain_core.runnables import RunnablePassthrough
 from src.prompt import prompt
 from src.llm import llm
-# ...existing code...
-from langchain.schema import HumanMessage, AIMessage, SystemMessage
+from langchain.schema import HumanMessage, AIMessage
 from flask_cors import CORS
 
 
@@ -16,7 +18,14 @@ CORS(app)
 def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 rag_chain = (
-    prompt
+    {
+        # Extract the content from the first HumanMessage in the input list
+        "context": (lambda x: x[0].content) | retriever | format_docs,
+        "blog": (lambda x: x[0].content) | retriever_2 | format_docs,
+        # Pass the input list directly as the question for the prompt template
+        "question": RunnablePassthrough(),
+    }
+    | prompt
     | llm
 )
 
@@ -37,11 +46,9 @@ def chat():
                 chain_messages.append(HumanMessage(content=msg["content"]))
             elif msg["role"] == "assistant":
                 chain_messages.append(AIMessage(content=msg["content"]))
-            elif msg["role"] == "system":
-                chain_messages.append(SystemMessage(content=msg["content"]))
 
-        response = rag_chain.invoke({"messages": chain_messages})
-        print("Response generated:", response)
+        response = rag_chain.invoke(chain_messages)
+
         # Return the AI's response
         response_main = {
         "choices": [
@@ -60,3 +67,6 @@ def chat():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5050)
